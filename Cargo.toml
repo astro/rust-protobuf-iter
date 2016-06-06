@@ -1,0 +1,7 @@
+[package]
+name = "protobuf-iter"
+version = "0.1.0"
+authors = ["Astro <astro@spaceboyz.net>"]
+
+[dependencies]
+byteorder = "*"
