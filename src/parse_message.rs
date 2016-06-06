@@ -1,6 +1,7 @@
 use std::convert::From;
 use byteorder::{ByteOrder, LittleEndian};
 
+use packed::*;
 use zigzag::ZigZag;
 
 
@@ -14,12 +15,7 @@ pub enum ParseValue<C> {
 
 impl<'a> From<ParseValue<&'a [u8]>> for &'a [u8] {
     fn from(input: ParseValue<&'a [u8]>) -> Self {
-        match input {
-            ParseValue::LengthDelimited(data) =>
-                data,
-            _ =>
-                panic!("Expected length-delimited data")
-        }
+        input.get_data()
     }
 }
 
@@ -63,7 +59,24 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for i64 {
     }
 }
 
+/// Getters for packed values
+impl<'a> ParseValue<&'a [u8]> {
+    pub fn get_data(self) -> &'a [u8] {
+        match self {
+            ParseValue::LengthDelimited(ref data) =>
+                data,
+            _ =>
+                panic!("Expected length-delimited data")
+        }
+    }
 
+    pub fn packed_varints<T>(self) -> PackedIter<'a, PackedVarint, T> {
+        PackedIter::new(self.get_data())
+    }
+}
+
+
+// TODO: Result<A, ParseError>
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ParseResult<A> {
     Result(A),
@@ -87,7 +100,7 @@ fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>,
     }
 }
 
-fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+pub fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
     let mut value = 0;
     let mut i = 0;
     while i < data.len() && data[i] & 0x80 != 0 {
@@ -119,7 +132,9 @@ fn parse_deprecated_value<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>,
 fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
     ParseResult::Error("Invalid type".to_owned())
 }
-                                                
+
+// TODO: could return a Message
+// TODO: Message.tag: u32
 pub fn parse_message<'a>(data: &'a [u8]) -> ParseResult<(u64, ParseValue<&'a [u8]>, &'a [u8])> {
     let (key, data) = match parse_varint_value(data) {
         ParseResult::Result((ParseValue::Varint(key), data)) =>
@@ -209,5 +224,20 @@ mod tests {
         let delimited: ParseValue<&'static [u8]> = ParseValue::LengthDelimited(b"testing");
         let value: &'static [u8] = From::from(delimited);
         assert_eq!(b"testing", value);
+    }
+
+    #[test]
+    fn packed_varints() {
+        let data = [0x22, 0x06, 0x03, 0x8E, 0x02, 0x9E, 0xA7, 0x05];
+        match parse_message(&data) {
+            ParseResult::Result((tag, value, rest)) => {
+                assert_eq!(tag, 4);
+                assert_eq!(vec![3, 270, 86942], value.packed_varints::<u32>().collect::<Vec<u32>>());
+                assert_eq!(rest.len(), 0);
+            },
+            _ => {
+                assert!(false);
+            }
+        }
     }
 }
