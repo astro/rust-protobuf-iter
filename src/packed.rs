@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use parse_message::*;
+use parse::*;
 
 pub trait Packed {
     fn parse<'a>(&'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])>;

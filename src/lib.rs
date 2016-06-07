@@ -1,8 +1,8 @@
 extern crate byteorder;
 
-mod parse_message;
-mod message;
-pub use message::*;
+mod parse;
+mod field;
+pub use field::*;
 mod message_iter;
 pub use message_iter::*;
 pub mod packed;

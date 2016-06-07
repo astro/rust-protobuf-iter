@@ -1,7 +1,7 @@
 use std::convert::From;
 use std::marker::PhantomData;
-use message::*;
-use parse_message::*;
+use field::*;
+use parse::*;
 
 
 #[derive(Clone)]
@@ -16,7 +16,7 @@ impl<'a> MessageIter<'a> {
         }
     }
 
-    pub fn tag<T: From<ParseValue<&'a [u8]>>>(self, tag: u64) -> ByTag<'a, T> {
+    pub fn tag<T: From<ParseValue<&'a [u8]>>>(self, tag: u32) -> ByTag<'a, T> {
         ByTag {
             tag: tag,
             inner: self,
@@ -38,16 +38,13 @@ impl<'a> From<ParseValue<&'a [u8]>> for MessageIter<'a> {
 }
 
 impl<'a> Iterator for MessageIter<'a> {
-    type Item = Message<&'a [u8]>;
+    type Item = Field<&'a [u8]>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match parse_message(self.data) {
-            ParseResult::Result((tag, value, rest)) => {
+        match parse_field(self.data) {
+            ParseResult::Result((field, rest)) => {
                 self.data = rest;
-                Some(Message {
-                    tag: tag,
-                    value: value
-                })
+                Some(field)
             },
             _ => None
         }
@@ -57,7 +54,7 @@ impl<'a> Iterator for MessageIter<'a> {
 /// Returned by MessageIter.tag()
 #[derive(Clone)]
 pub struct ByTag<'a, T: 'a + From<ParseValue<&'a [u8]>>> {
-    tag: u64,
+    tag: u32,
     inner: MessageIter<'a>,
     items: PhantomData<&'a T>
 }
@@ -83,13 +80,13 @@ impl<'a, T: 'a + From<ParseValue<&'a [u8]>>> Iterator for ByTag<'a, T> {
 mod tests {
     use super::*;
     use message::*;
-    use parse_message::*;
+    use parse_field::*;
 
     #[test]
     fn nested_iter() {
         let data = [0x1a, 0x03, 0x08, 0x96, 0x01];
         let mut outer = MessageIter::new(&data);
-        assert_eq!(outer.next(), Some(Message {
+        assert_eq!(outer.next(), Some(Field {
             tag: 3,
             value: ParseValue::LengthDelimited(&[0x08, 0x96, 0x01][..])
         }));
