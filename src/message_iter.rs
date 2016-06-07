@@ -42,7 +42,7 @@ impl<'a> Iterator for MessageIter<'a> {
 
     fn next(&mut self) -> Option<Self::Item> {
         match parse_field(self.data) {
-            ParseResult::Result((field, rest)) => {
+            Ok((field, rest)) => {
                 self.data = rest;
                 Some(field)
             },
@@ -79,8 +79,8 @@ impl<'a, T: 'a + From<ParseValue<&'a [u8]>>> Iterator for ByTag<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use message::*;
-    use parse_field::*;
+    use field::*;
+    use parse::*;
 
     #[test]
     fn nested_iter() {

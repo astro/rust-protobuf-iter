@@ -45,7 +45,7 @@ for PackedIter<'a, P, T> {
         }
 
         match P::parse(self.data) {
-            ParseResult::Result((value, rest)) => {
+            Ok((value, rest)) => {
                 self.data = rest;
                 // TODO: in the packed case we don't want to take the
                 // detour over distinguishing between ParseValue
