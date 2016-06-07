@@ -16,7 +16,7 @@ impl<'a> MessageIter<'a> {
         }
     }
 
-    pub fn tag<T: From<ParseValue<&'a [u8]>>>(self, tag: u32) -> ByTag<'a, T> {
+    pub fn tag<T: From<ParseValue<'a>>>(self, tag: u32) -> ByTag<'a, T> {
         ByTag {
             tag: tag,
             inner: self,
@@ -26,8 +26,8 @@ impl<'a> MessageIter<'a> {
 }
 
 /// Recursive for LengthDelimited
-impl<'a> From<ParseValue<&'a [u8]>> for MessageIter<'a> {
-    fn from(value: ParseValue<&'a [u8]>) -> MessageIter<'a> {
+impl<'a> From<ParseValue<'a>> for MessageIter<'a> {
+    fn from(value: ParseValue<'a>) -> MessageIter<'a> {
         match value {
             ParseValue::LengthDelimited(data) =>
                 MessageIter::new(data.as_ref()),
@@ -38,7 +38,7 @@ impl<'a> From<ParseValue<&'a [u8]>> for MessageIter<'a> {
 }
 
 impl<'a> Iterator for MessageIter<'a> {
-    type Item = Field<&'a [u8]>;
+    type Item = Field<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
         match parse_field(self.data) {
@@ -53,14 +53,13 @@ impl<'a> Iterator for MessageIter<'a> {
 
 /// Returned by MessageIter.tag()
 #[derive(Clone)]
-pub struct ByTag<'a, T: 'a + From<ParseValue<&'a [u8]>>> {
+pub struct ByTag<'a, T: 'a + From<ParseValue<'a>>> {
     tag: u32,
     inner: MessageIter<'a>,
     items: PhantomData<&'a T>
 }
 
-impl<'a, T: 'a + From<ParseValue<&'a [u8]>>> Iterator for ByTag<'a, T> {
-    // type Item = ParseValue<&'a [u8]>;
+impl<'a, T: 'a + From<ParseValue<'a>>> Iterator for ByTag<'a, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {

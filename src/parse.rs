@@ -1,32 +1,33 @@
 use std::convert::From;
-use byteorder::{ByteOrder, LittleEndian};
 
 use field::*;
 use packed::*;
+use value32::*;
+use value64::*;
 use varint::*;
 
     
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
-pub enum ParseValue<C> {
-    Value32(C),
-    Value64(C),
+pub enum ParseValue<'a> {
+    Value32(Value32<'a>),
+    Value64(Value64<'a>),
     Varint(Varint),
-    LengthDelimited(C),
+    LengthDelimited(&'a [u8]),
 }
 
-impl<'a> From<ParseValue<&'a [u8]>> for &'a [u8] {
-    fn from(input: ParseValue<&'a [u8]>) -> Self {
+impl<'a> From<ParseValue<'a>> for &'a [u8] {
+    fn from(input: ParseValue<'a>) -> Self {
         input.get_data()
     }
 }
 
-impl<C: AsRef<[u8]>> From<ParseValue<C>> for u32 {
-    fn from(value: ParseValue<C>) -> u32 {
+impl<'a> From<ParseValue<'a>> for u32 {
+    fn from(value: ParseValue<'a>) -> u32 {
         match value {
-            ParseValue::Value32(data) =>
-                LittleEndian::read_u32(data.as_ref()),
-            ParseValue::Value64(data) =>
-                LittleEndian::read_u32(&data.as_ref()[4..]),
+            ParseValue::Value32(value32) =>
+                From::from(value32),
+            ParseValue::Value64(value64) =>
+                From::from(value64),
             ParseValue::Varint(varint) =>
                 From::from(varint),
             _ =>
@@ -35,13 +36,13 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for u32 {
     }
 }
 
-impl<C: AsRef<[u8]>> From<ParseValue<C>> for i32 {
-    fn from(value: ParseValue<C>) -> i32 {
+impl<'a> From<ParseValue<'a>> for i32 {
+    fn from(value: ParseValue<'a>) -> i32 {
         match value {
-            ParseValue::Value32(data) =>
-                LittleEndian::read_i32(data.as_ref()),
-            ParseValue::Value64(data) =>
-                LittleEndian::read_i32(&data.as_ref()[4..]),
+            ParseValue::Value32(value32) =>
+                From::from(value32),
+            ParseValue::Value64(value64) =>
+                From::from(value64),
             ParseValue::Varint(varint) =>
                 From::from(varint),
             _ =>
@@ -50,13 +51,13 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for i32 {
     }
 }
 
-impl<C: AsRef<[u8]>> From<ParseValue<C>> for u64 {
-    fn from(value: ParseValue<C>) -> u64 {
+impl<'a> From<ParseValue<'a>> for u64 {
+    fn from(value: ParseValue<'a>) -> u64 {
         match value {
-            ParseValue::Value32(data) =>
-                LittleEndian::read_u32(data.as_ref()) as u64,
-            ParseValue::Value64(data) =>
-                LittleEndian::read_u64(data.as_ref()),
+            ParseValue::Value32(value32) =>
+                From::from(value32),
+            ParseValue::Value64(value64) =>
+                From::from(value64),
             ParseValue::Varint(varint) =>
                 From::from(varint),
             _ =>
@@ -65,13 +66,13 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for u64 {
     }
 }
 
-impl<C: AsRef<[u8]>> From<ParseValue<C>> for i64 {
-    fn from(value: ParseValue<C>) -> i64 {
+impl<'a> From<ParseValue<'a>> for i64 {
+    fn from(value: ParseValue<'a>) -> i64 {
         match value {
-            ParseValue::Value32(data) =>
-                LittleEndian::read_i32(data.as_ref()) as i64,
-            ParseValue::Value64(data) =>
-                LittleEndian::read_i64(data.as_ref()),
+            ParseValue::Value32(value32) =>
+                From::from(value32),
+            ParseValue::Value64(value64) =>
+                From::from(value64),
             ParseValue::Varint(varint) =>
                 From::from(varint),
             _ =>
@@ -81,17 +82,26 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for i64 {
 }
 
 /// Getters for packed values
-impl<'a> ParseValue<&'a [u8]> {
+impl<'a> ParseValue<'a> {
     pub fn get_data(self) -> &'a [u8] {
         match self {
             ParseValue::LengthDelimited(ref data) =>
                 data,
             _ =>
+                // TODO: Option?
                 panic!("Expected length-delimited data")
         }
     }
 
     pub fn packed_varints<T>(self) -> PackedIter<'a, PackedVarint, T> {
+        PackedIter::new(self.get_data())
+    }
+
+    pub fn packed_value32s<T>(self) -> PackedIter<'a, PackedValue32, T> {
+        PackedIter::new(self.get_data())
+    }
+
+    pub fn packed_value64s<T>(self) -> PackedIter<'a, PackedValue64, T> {
         PackedIter::new(self.get_data())
     }
 }
@@ -106,22 +116,32 @@ pub enum ParseError {
             
 pub type ParseResult<A> = Result<A, ParseError>;
 
-fn parse_value32_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
-    if data.len() >= 8 {
-        Ok((ParseValue::Value64(&data[0..8]), &data[8..]))
+pub fn parse_value32<'a>(data: &'a [u8]) -> ParseResult<(Value32<'a>, &'a [u8])> {
+    if data.len() >= 4 {
+        Ok((Value32 { data: &data[0..4] }, &data[4..]))
     } else {
         Err(ParseError::NotEnoughData)
     }
 }
 
-fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+fn parse_value32_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
+    parse_value32(data)
+        .map(|(value32, rest)| (ParseValue::Value32(value32), rest))
+}
+
+pub fn parse_value64<'a>(data: &'a [u8]) -> ParseResult<(Value64<'a>, &'a [u8])> {
     if data.len() >= 8 {
-        Ok((ParseValue::Value64(&data[0..8]), &data[8..]))
+        Ok((Value64 { data: &data[0..8] }, &data[8..]))
     } else {
         Err(ParseError::NotEnoughData)
     }
 }
 
+fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
+    parse_value64(data)
+        .map(|(value64, rest)| (ParseValue::Value64(value64), rest))
+}
+    
 /// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
 pub fn parse_varint<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
     let mut value = 0;
@@ -138,12 +158,12 @@ pub fn parse_varint<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
     }
 }
 
-fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     parse_varint(data)
         .map(|(varint, rest)| (ParseValue::Varint(varint), rest))
 }
 
-fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     match parse_varint_value(data) {
         Ok((ParseValue::Varint(len), data)) => {
             let len: u64 = From::from(len);
@@ -154,15 +174,15 @@ fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&
     }
 }
 
-fn parse_deprecated_value<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+fn parse_deprecated_value<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     Err(ParseError::DeprecatedType)
 }
                                                 
-fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     Err(ParseError::InvalidType)
 }
 
-pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<&'a [u8]>, &'a [u8])> {
+pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
     let (key, data) = match parse_varint_value(data) {
         Ok((ParseValue::Varint(key), data)) => {
             let key: u64 = From::from(key);
@@ -204,6 +224,8 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<&'a [u8]>, &'a [u8]
 mod tests {
     use super::*;
     use field::*;
+    use value32::*;
+    use value64::*;
     use varint::*;
 
     #[test]
@@ -235,19 +257,21 @@ mod tests {
 
     #[test]
     fn typed() {
-        let value32 = ParseValue::Value32(vec![0x96, 0, 0, 0]);
+        let data32 = &[0x96, 0, 0, 0];
+        let value32 = ParseValue::Value32(Value32 { data: data32 });
         assert_eq!(150u32, From::from(value32.clone()));
         assert_eq!(150i32, From::from(value32.clone()));
         assert_eq!(150u64, From::from(value32.clone()));
         assert_eq!(150i64, From::from(value32.clone()));
 
-        let value64 = ParseValue::Value64(vec![0x96, 0, 0, 0, 0, 0, 0, 0]);
+        let data64 = &[0x96, 0, 0, 0, 0, 0, 0, 0];
+        let value64 = ParseValue::Value64(Value64 { data: data64 });
         assert_eq!(150u64, From::from(value64.clone()));
         assert_eq!(150i64, From::from(value64.clone()));
         assert_eq!(150u64, From::from(value64.clone()));
         assert_eq!(150i64, From::from(value64.clone()));
 
-        let varint: ParseValue<Vec<u8>> = ParseValue::Varint(Varint { value: 150 });
+        let varint = ParseValue::Varint(Varint { value: 150 });
         assert_eq!(150u64, From::from(varint.clone()));
         assert_eq!(75i64, From::from(varint.clone()));
         assert_eq!(150u64, From::from(varint.clone()));
@@ -256,7 +280,7 @@ mod tests {
 
     #[test]
     fn typed_buffer() {
-        let delimited: ParseValue<&'static [u8]> = ParseValue::LengthDelimited(b"testing");
+        let delimited: ParseValue<'static> = ParseValue::LengthDelimited(b"testing");
         let value: &'static [u8] = From::from(delimited);
         assert_eq!(b"testing", value);
     }

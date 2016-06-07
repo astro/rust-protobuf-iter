@@ -1,26 +1,46 @@
 use std::marker::PhantomData;
 
 use parse::*;
+use value32::*;
+use value64::*;
 use varint::*;
 
-pub trait Packed {
+pub trait Packed<'a> {
     type Item;
 
-    fn parse<'a>(&'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
+    fn parse(&'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
 }
 
 pub struct PackedVarint;
 
-impl Packed for PackedVarint {
+impl<'a> Packed<'a> for PackedVarint {
     type Item = Varint;
 
-    fn parse<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
+    fn parse(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
         parse_varint(data)
     }
 }
 
-// TODO: PackedValue32, PackedValue64
+pub struct PackedValue32;
 
+impl<'a> Packed<'a> for PackedValue32 {
+    type Item = Value32<'a>;
+
+    fn parse(data: &'a [u8]) -> ParseResult<(Value32<'a>, &'a [u8])> {
+        parse_value32(data)
+    }
+}
+
+pub struct PackedValue64;
+
+impl<'a> Packed<'a> for PackedValue64 {
+    type Item = Value64<'a>;
+
+    fn parse(data: &'a [u8]) -> ParseResult<(Value64<'a>, &'a [u8])> {
+        parse_value64(data)
+    }
+}
+                                                 
 
 pub struct PackedIter<'a, P, T> {
     data: &'a [u8],
@@ -40,7 +60,7 @@ impl<'a, P, T> PackedIter<'a, P, T> {
 
 /// Type parameter P: Encoding
 /// Type parameter T: Coercion target
-impl<'a, P: Packed, T: From<<P as Packed>::Item>> Iterator
+impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator
 for PackedIter<'a, P, T> {
     type Item = T;
 
@@ -72,5 +92,29 @@ mod tests {
     fn packed_varints() {
         let iter: PackedIter<'static, PackedVarint, u32> = PackedIter::new(VARINTS_ENCODED);
         assert_eq!(vec![3, 270, 86942], iter.collect::<Vec<u32>>());
+    }
+    
+    const VALUE32S_ENCODED: &'static [u8] = &[
+        1, 0, 0, 0,
+        2, 0, 0, 0,
+        3, 0, 0, 0
+    ];
+
+    #[test]
+    fn packed_value32s() {
+        let iter: PackedIter<'static, PackedValue32, u32> = PackedIter::new(VALUE32S_ENCODED);
+        assert_eq!(vec![1, 2, 3], iter.collect::<Vec<u32>>());
+    }
+    
+    const VALUE64S_ENCODED: &'static [u8] = &[
+        1, 0, 0, 0, 0, 0, 0, 0,
+        2, 0, 0, 0, 0, 0, 0, 0,
+        3, 0, 0, 0, 0, 0, 0, 0,
+    ];
+
+    #[test]
+    fn packed_value64s() {
+        let iter: PackedIter<'static, PackedValue64, u32> = PackedIter::new(VALUE64S_ENCODED);
+        assert_eq!(vec![1, 2, 3], iter.collect::<Vec<u32>>());
     }
 }
