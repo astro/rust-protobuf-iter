@@ -6,4 +6,5 @@ pub use field::*;
 mod message_iter;
 pub use message_iter::*;
 pub mod packed;
+mod varint;
 mod zigzag;

@@ -1,16 +1,21 @@
 use std::marker::PhantomData;
 
 use parse::*;
+use varint::*;
 
 pub trait Packed {
-    fn parse<'a>(&'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])>;
+    type Item;
+
+    fn parse<'a>(&'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
 }
 
 pub struct PackedVarint;
 
 impl Packed for PackedVarint {
-    fn parse<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
-        parse_varint_value(data)
+    type Item = Varint;
+
+    fn parse<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
+        parse_varint(data)
     }
 }
 
@@ -35,7 +40,7 @@ impl<'a, P, T> PackedIter<'a, P, T> {
 
 /// Type parameter P: Encoding
 /// Type parameter T: Coercion target
-impl<'a, P: Packed, T: From<ParseValue<&'a [u8]>>> Iterator
+impl<'a, P: Packed, T: From<<P as Packed>::Item>> Iterator
 for PackedIter<'a, P, T> {
     type Item = T;
 
@@ -47,9 +52,6 @@ for PackedIter<'a, P, T> {
         match P::parse(self.data) {
             Ok((value, rest)) => {
                 self.data = rest;
-                // TODO: in the packed case we don't want to take the
-                // detour over distinguishing between ParseValue
-                // members!
                 Some(From::from(value))
             },
             _ => {

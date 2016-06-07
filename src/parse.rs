@@ -3,14 +3,14 @@ use byteorder::{ByteOrder, LittleEndian};
 
 use field::*;
 use packed::*;
-use zigzag::ZigZag;
+use varint::*;
 
-
+    
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub enum ParseValue<C> {
     Value32(C),
     Value64(C),
-    Varint(u64),
+    Varint(Varint),
     LengthDelimited(C),
 }
 
@@ -27,16 +27,26 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for u32 {
                 LittleEndian::read_u32(data.as_ref()),
             ParseValue::Value64(data) =>
                 LittleEndian::read_u32(&data.as_ref()[4..]),
-            ParseValue::Varint(i) => i as u32,
-            _ => 0
+            ParseValue::Varint(varint) =>
+                From::from(varint),
+            _ =>
+                0
         }
     }
 }
 
 impl<C: AsRef<[u8]>> From<ParseValue<C>> for i32 {
     fn from(value: ParseValue<C>) -> i32 {
-        let r: u32 = From::from(value);
-        r.zigzag()
+        match value {
+            ParseValue::Value32(data) =>
+                LittleEndian::read_i32(data.as_ref()),
+            ParseValue::Value64(data) =>
+                LittleEndian::read_i32(&data.as_ref()[4..]),
+            ParseValue::Varint(varint) =>
+                From::from(varint),
+            _ =>
+                0
+        }
     }
 }
 
@@ -47,16 +57,26 @@ impl<C: AsRef<[u8]>> From<ParseValue<C>> for u64 {
                 LittleEndian::read_u32(data.as_ref()) as u64,
             ParseValue::Value64(data) =>
                 LittleEndian::read_u64(data.as_ref()),
-            ParseValue::Varint(i) => i,
-            _ => 0
+            ParseValue::Varint(varint) =>
+                From::from(varint),
+            _ =>
+                0
         }
     }
 }
 
 impl<C: AsRef<[u8]>> From<ParseValue<C>> for i64 {
     fn from(value: ParseValue<C>) -> i64 {
-        let r: u64 = From::from(value);
-        r.zigzag()
+        match value {
+            ParseValue::Value32(data) =>
+                LittleEndian::read_i32(data.as_ref()) as i64,
+            ParseValue::Value64(data) =>
+                LittleEndian::read_i64(data.as_ref()),
+            ParseValue::Varint(varint) =>
+                From::from(varint),
+            _ =>
+                0
+        }
     }
 }
 
@@ -102,7 +122,8 @@ fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>,
     }
 }
 
-pub fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+/// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
+pub fn parse_varint<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
     let mut value = 0;
     let mut i = 0;
     while i < data.len() && data[i] & 0x80 != 0 {
@@ -111,15 +132,21 @@ pub fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8
     }
     if i < data.len() {
         value |= (data[i] as u64) << (7 * i);
-        Ok((ParseValue::Varint(value), &data[(i + 1)..]))
+        Ok((Varint { value: value }, &data[(i + 1)..]))
     } else {
         Err(ParseError::NotEnoughData)
     }
 }
 
+fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
+    parse_varint(data)
+        .map(|(varint, rest)| (ParseValue::Varint(varint), rest))
+}
+
 fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a [u8])> {
     match parse_varint_value(data) {
         Ok((ParseValue::Varint(len), data)) => {
+            let len: u64 = From::from(len);
             let len = len as usize;
             Ok((ParseValue::LengthDelimited(&data[0..len]), &data[len..]))
         },
@@ -137,8 +164,10 @@ fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<&'a [u8]>, &'a
 
 pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<&'a [u8]>, &'a [u8])> {
     let (key, data) = match parse_varint_value(data) {
-        Ok((ParseValue::Varint(key), data)) =>
-            (key, data),
+        Ok((ParseValue::Varint(key), data)) => {
+            let key: u64 = From::from(key);
+            (key, data)
+        },
         Ok(_) =>
             return Err(ParseError::Unexpected),
         Err(e) =>
@@ -175,6 +204,7 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<&'a [u8]>, &'a [u8]
 mod tests {
     use super::*;
     use field::*;
+    use varint::*;
 
     #[test]
     fn strings() {
@@ -192,7 +222,7 @@ mod tests {
         let r = parse_field(&data).unwrap();
         assert_eq!(r, (Field {
             tag: 1,
-            value: ParseValue::Varint(150)
+            value: ParseValue::Varint(Varint { value: 150 })
         }, &[][..]));
     }
 
@@ -200,24 +230,24 @@ mod tests {
     fn varint_value() {
         let data = [0b10101100, 0b00000010];
         let r = super::parse_varint_value(&data).unwrap();
-        assert_eq!(r, (ParseValue::Varint(300), &[][..]));
+        assert_eq!(r, (ParseValue::Varint(Varint { value: 300 }), &[][..]));
     }
 
     #[test]
     fn typed() {
         let value32 = ParseValue::Value32(vec![0x96, 0, 0, 0]);
         assert_eq!(150u32, From::from(value32.clone()));
-        assert_eq!(75i32, From::from(value32.clone()));
+        assert_eq!(150i32, From::from(value32.clone()));
         assert_eq!(150u64, From::from(value32.clone()));
-        assert_eq!(75i64, From::from(value32.clone()));
+        assert_eq!(150i64, From::from(value32.clone()));
 
         let value64 = ParseValue::Value64(vec![0x96, 0, 0, 0, 0, 0, 0, 0]);
         assert_eq!(150u64, From::from(value64.clone()));
-        assert_eq!(75i64, From::from(value64.clone()));
+        assert_eq!(150i64, From::from(value64.clone()));
         assert_eq!(150u64, From::from(value64.clone()));
-        assert_eq!(75i64, From::from(value64.clone()));
+        assert_eq!(150i64, From::from(value64.clone()));
 
-        let varint: ParseValue<Vec<u8>> = ParseValue::Varint(150);
+        let varint: ParseValue<Vec<u8>> = ParseValue::Varint(Varint { value: 150 });
         assert_eq!(150u64, From::from(varint.clone()));
         assert_eq!(75i64, From::from(varint.clone()));
         assert_eq!(150u64, From::from(varint.clone()));
