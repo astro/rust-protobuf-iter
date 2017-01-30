@@ -2,10 +2,10 @@ use std::convert::From;
 use std::ops::Deref;
 
 use field::*;
-use packed::*;
 use value32::*;
 use value64::*;
 use varint::*;
+use packed::*;
 
     
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
@@ -93,7 +93,6 @@ impl<'a> From<ParseValue<'a>> for i64 {
     }
 }
 
-/// Getters for packed values
 impl<'a> ParseValue<'a> {
     pub fn get_data(self) -> &'a [u8] {
         match self {
@@ -104,17 +103,16 @@ impl<'a> ParseValue<'a> {
                 panic!("Expected length-delimited data")
         }
     }
-
     pub fn packed_varints<T>(self) -> PackedIter<'a, PackedVarint, T> {
-        PackedIter::new(self.get_data())
+        From::from(self)
     }
 
     pub fn packed_value32s<T>(self) -> PackedIter<'a, PackedValue32, T> {
-        PackedIter::new(self.get_data())
+        From::from(self)
     }
 
     pub fn packed_value64s<T>(self) -> PackedIter<'a, PackedValue64, T> {
-        PackedIter::new(self.get_data())
+        From::from(self)
     }
 }
 
@@ -156,15 +154,17 @@ fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [
     
 /// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
 pub fn parse_varint<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
-    let mut value = 0;
     let mut i = 0;
-    while i < data.len() && data[i] & 0x80 != 0 {
-        value |= ((data[i] & 0x7f) as u64) << (7 * i);
+    while i < data.len() && data[i] & 0x80 == 0x80 {
         i += 1;
     }
-    if i < data.len() {
-        value |= (data[i] as u64) << (7 * i);
-        Ok((Varint { value: value }, &data[(i + 1)..]))
+    i += 1;
+    if i <= data.len() {
+        let mut value = 0;
+        for byte in data[0..i].iter().rev() {
+            value = (value << 7) | (byte & 0x7f) as u64;
+        }
+        Ok((Varint { value: value }, &data[i..]))
     } else {
         Err(ParseError::NotEnoughData)
     }
@@ -297,13 +297,14 @@ mod tests {
         assert_eq!(b"testing", value);
     }
 
+    const PACKED_VARINTS: &'static [u8] = &[0x22, 0x06, 0x03, 0x8E, 0x02, 0x9E, 0xA7, 0x05];
+
     #[test]
     fn packed_varints() {
-        let data = [0x22, 0x06, 0x03, 0x8E, 0x02, 0x9E, 0xA7, 0x05];
-        match parse_field(&data) {
+        match parse_field(&PACKED_VARINTS) {
             Ok((field, rest)) => {
                 assert_eq!(field.tag, 4);
-                assert_eq!(vec![3, 270, 86942], field.value.packed_varints::<u32>().collect::<Vec<u32>>());
+                assert_eq!(vec![3, 270, 86942], field.value.packed_varints().collect::<Vec<u32>>());
                 assert_eq!(rest.len(), 0);
             },
             _ => {

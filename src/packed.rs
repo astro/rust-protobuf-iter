@@ -58,6 +58,12 @@ impl<'a, P, T> PackedIter<'a, P, T> {
     }
 }
 
+impl<'a, P, T> From<ParseValue<'a>> for PackedIter<'a, P, T> {
+    fn from(parse_value: ParseValue<'a>) -> Self {
+        Self::new(parse_value.get_data())
+    }
+}
+
 /// Type parameter P: Encoding
 /// Type parameter T: Coercion target
 impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator
