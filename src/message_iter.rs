@@ -68,7 +68,7 @@ impl<'a, T: 'a + From<ParseValue<'a>>> Iterator for ByTag<'a, T> {
                 if msg.tag == self.tag {
                     Some(From::from(msg.value))
                 } else {
-                    None
+                    self.next()
                 }
             })
     }
