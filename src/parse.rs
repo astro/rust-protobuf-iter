@@ -1,4 +1,5 @@
 use std::convert::From;
+use std::ops::Deref;
 
 use field::*;
 use packed::*;
@@ -13,6 +14,17 @@ pub enum ParseValue<'a> {
     Value64(Value64<'a>),
     Varint(Varint),
     LengthDelimited(&'a [u8]),
+}
+
+impl<'a> Deref for ParseValue<'a> {
+    type Target = &'a [u8];
+
+    fn deref(&self) -> &Self::Target {
+        match self {
+            &ParseValue::LengthDelimited(ref data) => data,
+            _ => panic!("Expected length-delimited data")
+        }
+    }
 }
 
 impl<'a> From<ParseValue<'a>> for &'a [u8] {
