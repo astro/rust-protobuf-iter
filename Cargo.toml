@@ -1,5 +1,5 @@
 [package]
-name = "protobuf-iter"
+name = "protobuf_iter"
 version = "0.1.0"
 authors = ["Astro <astro@spaceboyz.net>"]
 
