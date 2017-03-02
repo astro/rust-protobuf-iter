@@ -2,6 +2,8 @@
 name = "protobuf_iter"
 version = "0.1.0"
 authors = ["Astro <astro@spaceboyz.net>"]
+license = "MIT"
+description = "Iterate over Protobuf messages while decoding on the fly"
 
 [dependencies]
 byteorder = "*"
