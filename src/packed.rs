@@ -11,6 +11,7 @@ pub trait Packed<'a> {
     fn parse(&'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
 }
 
+#[derive(Clone, Copy)]
 pub struct PackedVarint;
 
 impl<'a> Packed<'a> for PackedVarint {
@@ -21,6 +22,7 @@ impl<'a> Packed<'a> for PackedVarint {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct PackedValue32;
 
 impl<'a> Packed<'a> for PackedValue32 {
@@ -31,6 +33,7 @@ impl<'a> Packed<'a> for PackedValue32 {
     }
 }
 
+#[derive(Clone, Copy)]
 pub struct PackedValue64;
 
 impl<'a> Packed<'a> for PackedValue64 {
@@ -42,6 +45,7 @@ impl<'a> Packed<'a> for PackedValue64 {
 }
                                                  
 
+#[derive(Clone)]
 pub struct PackedIter<'a, P, T> {
     data: &'a [u8],
     packed: PhantomData<P>,
