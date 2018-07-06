@@ -1,7 +1,7 @@
 extern crate byteorder;
 
 mod parse;
-pub use parse::{ParseValue};
+pub use parse::ParseValue;
 mod field;
 pub use field::*;
 mod message_iter;
