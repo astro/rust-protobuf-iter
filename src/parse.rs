@@ -155,19 +155,18 @@ fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [
 /// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
 pub fn parse_varint<'a>(data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
     let mut i = 0;
-    while i < data.len() && data[i] & 0x80 == 0x80 {
+    let mut shift = 0;
+    let mut value = 0;
+    while i < data.len() {
+        let byte = data[i];
+        value |= ((byte & 0x7f) as u64) << shift;
         i += 1;
-    }
-    i += 1;
-    if i <= data.len() {
-        let mut value = 0;
-        for byte in data[0..i].iter().rev() {
-            value = (value << 7) | (byte & 0x7f) as u64;
+        shift += 7;
+        if byte & 0x80 == 0 {
+            return Ok((Varint { value: value }, &data[i..]));
         }
-        Ok((Varint { value: value }, &data[i..]))
-    } else {
-        Err(ParseError::NotEnoughData)
     }
+    Err(ParseError::NotEnoughData)
 }
 
 fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
