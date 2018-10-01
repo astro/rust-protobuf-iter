@@ -78,8 +78,6 @@ impl<'a, T: 'a + From<ParseValue<'a>>> Iterator for ByTag<'a, T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use field::*;
-    use parse::*;
 
     #[test]
     fn nested_iter() {

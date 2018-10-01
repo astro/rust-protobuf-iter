@@ -234,10 +234,6 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use field::*;
-    use value32::*;
-    use value64::*;
-    use varint::*;
 
     #[test]
     fn strings() {
