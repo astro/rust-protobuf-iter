@@ -192,6 +192,17 @@ fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])
     Err(ParseError::InvalidType)
 }
 
+const MSG_ACTIONS: [&Fn(&[u8]) -> Result<(ParseValue, &[u8]), ParseError>; 8] = [
+    &parse_varint_value,
+    &parse_value64_value,
+    &parse_length_delimited_value,
+    &parse_deprecated_value,
+    &parse_deprecated_value,
+    &parse_value32_value,
+    &parse_invalid_type,
+    &parse_invalid_type,
+];
+
 pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
     let (key, data) = match parse_varint_value(data) {
         Ok((ParseValue::Varint(key), data)) => {
@@ -207,18 +218,7 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
     let msg_tag = (key >> 3) as u32;
     let msg_type = key & 7;
 
-    let msg_actions = [
-        parse_varint_value,
-        parse_value64_value,
-        parse_length_delimited_value,
-        parse_deprecated_value,
-        parse_deprecated_value,
-        parse_value32_value,
-        parse_invalid_type,
-        parse_invalid_type,
-    ];
-    assert_eq!(msg_actions.len(), 8);
-    let msg_action = msg_actions[msg_type as usize];
+    let msg_action = MSG_ACTIONS[msg_type as usize];
     match msg_action(data) {
         Ok((value, data)) =>
             Ok((Field {
