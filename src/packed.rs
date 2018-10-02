@@ -78,15 +78,12 @@ impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator for PackedIte
             return None
         }
 
-        match P::parse(self.data) {
-            Ok((value, rest)) => {
+        P::parse(self.data)
+            .ok()
+            .map(|(value, rest)| {
                 self.data = rest;
-                Some(From::from(value))
-            },
-            _ => {
-                None
-            }
-        }
+                From::from(value)
+            })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
