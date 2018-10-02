@@ -70,8 +70,7 @@ impl<'a, P, T> From<ParseValue<'a>> for PackedIter<'a, P, T> {
 
 /// Type parameter P: Encoding
 /// Type parameter T: Coercion target
-impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator
-for PackedIter<'a, P, T> {
+impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator for PackedIter<'a, P, T> {
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -88,6 +87,10 @@ for PackedIter<'a, P, T> {
                 None
             }
         }
+    }
+
+    fn size_hint(&self) -> (usize, Option<usize>) {
+        (0, Some(self.data.len()))
     }
 }
 
