@@ -1,12 +1,12 @@
 [package]
 name = "protobuf_iter"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Astro <astro@spaceboyz.net>"]
 license = "MIT"
 description = "Iterate over Protobuf messages while decoding on the fly"
 
 [dependencies]
-byteorder = "1.0.0"
+byteorder = "1.2"
 
 [dev-dependencies]
 criterion = "0.2"
