@@ -41,13 +41,12 @@ impl<'a> Iterator for MessageIter<'a> {
     type Item = Field<'a>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        match parse_field(self.data) {
-            Ok((field, rest)) => {
+        parse_field(self.data)
+            .map(|(field, rest)| {
                 self.data = rest;
-                Some(field)
-            },
-            _ => None
-        }
+                field
+            })
+            .ok()
     }
 }
 
