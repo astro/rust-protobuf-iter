@@ -2,7 +2,7 @@ use byteorder::{ByteOrder, LittleEndian};
 
 
 /// Encapsulated for From
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Value32<'a> {
     pub data: &'a [u8]
 }

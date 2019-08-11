@@ -8,7 +8,7 @@ use varint::*;
 use packed::*;
 
     
-#[derive(Debug, Eq, PartialEq, Clone, Copy)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ParseValue<'a> {
     Value32(Value32<'a>),
     Value64(Value64<'a>),
