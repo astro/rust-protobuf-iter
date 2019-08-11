@@ -1,9 +1,11 @@
 [package]
 name = "protobuf_iter"
-version = "0.1.1"
+version = "0.1.2"
 authors = ["Astro <astro@spaceboyz.net>"]
 license = "MIT"
 description = "Iterate over Protobuf messages while decoding on the fly"
+documentation = "https://docs.rs/protobuf_iter/"
+repository = "https://github.com/astro/rust-protobuf-iter/"
 
 [dependencies]
 byteorder = "1"
