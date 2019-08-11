@@ -6,7 +6,7 @@ license = "MIT"
 description = "Iterate over Protobuf messages while decoding on the fly"
 
 [dependencies]
-byteorder = "1.2"
+byteorder = "1"
 
 [dev-dependencies]
 criterion = "0.2"
