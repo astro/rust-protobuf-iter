@@ -1,4 +1,4 @@
-use zigzag::ZigZag;
+use crate::zigzag::ZigZag;
 
 /// Encapsulated for From
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]

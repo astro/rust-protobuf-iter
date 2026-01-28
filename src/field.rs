@@ -1,4 +1,4 @@
-use parse::ParseValue;
+use crate::parse::ParseValue;
 
 
 #[derive(Debug, Eq, PartialEq)]

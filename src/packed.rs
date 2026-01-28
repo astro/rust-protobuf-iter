@@ -1,9 +1,9 @@
 use std::marker::PhantomData;
 
-use parse::*;
-use value32::*;
-use value64::*;
-use varint::*;
+use crate::parse::*;
+use crate::value32::*;
+use crate::value64::*;
+use crate::varint::*;
 
 pub trait Packed<'a> {
     type Item;
