@@ -1,11 +1,11 @@
 use std::convert::From;
 use std::ops::Deref;
 
-use field::*;
-use value32::*;
-use value64::*;
-use varint::*;
-use packed::*;
+use crate::field::*;
+use crate::value32::*;
+use crate::value64::*;
+use crate::varint::*;
+use crate::packed::*;
 
     
 #[derive(Debug, Eq, PartialEq, Clone)]
