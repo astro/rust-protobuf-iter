@@ -1,6 +1,3 @@
-use byteorder::{ByteOrder, LittleEndian};
-
-
 /// Encapsulated for From
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub struct Value64<'a> {
@@ -9,24 +6,24 @@ pub struct Value64<'a> {
 
 impl<'a> From<Value64<'a>> for u32 {
     fn from(value64: Value64<'a>) -> u32 {
-        LittleEndian::read_u64(&value64.data) as u32
+	u64::from_le_bytes(value64.data.try_into().unwrap()) as u32
     }
 }
 
 impl<'a> From<Value64<'a>> for i32 {
     fn from(value64: Value64<'a>) -> i32 {
-        LittleEndian::read_i64(&value64.data) as i32
+	i64::from_le_bytes(value64.data.try_into().unwrap()) as i32
     }
 }
 
 impl<'a> From<Value64<'a>> for u64 {
     fn from(value64: Value64<'a>) -> u64 {
-        LittleEndian::read_u64(&value64.data)
+	u64::from_le_bytes(value64.data.try_into().unwrap())
     }
 }
 
 impl<'a> From<Value64<'a>> for i64 {
     fn from(value64: Value64<'a>) -> i64 {
-        LittleEndian::read_i64(&value64.data)
+	i64::from_le_bytes(value64.data.try_into().unwrap())
     }
 }
