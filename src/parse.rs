@@ -192,7 +192,7 @@ fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])
     Err(ParseError::InvalidType)
 }
 
-const MSG_ACTIONS: [&Fn(&[u8]) -> Result<(ParseValue, &[u8]), ParseError>; 8] = [
+const MSG_ACTIONS: [&dyn Fn(&[u8]) -> Result<(ParseValue, &[u8]), ParseError>; 8] = [
     &parse_varint_value,
     &parse_value64_value,
     &parse_length_delimited_value,

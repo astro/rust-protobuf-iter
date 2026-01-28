@@ -8,7 +8,7 @@ use varint::*;
 pub trait Packed<'a> {
     type Item;
 
-    fn parse(&'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
+    fn parse(data: &'a [u8]) -> ParseResult<(Self::Item, &'a [u8])>;
 }
 
 #[derive(Clone, Copy)]
