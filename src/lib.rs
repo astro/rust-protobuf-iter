@@ -1,5 +1,3 @@
-extern crate byteorder;
-
 mod parse;
 pub use parse::ParseValue;
 mod field;
