@@ -3,7 +3,7 @@ use crate::zigzag::ZigZag;
 /// Encapsulated for From
 #[derive(Debug, Eq, PartialEq, Clone, Copy)]
 pub struct Varint {
-    pub value: u64
+    pub value: u64,
 }
 
 impl From<Varint> for u32 {

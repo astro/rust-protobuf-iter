@@ -43,13 +43,12 @@ impl<'a> Packed<'a> for PackedValue64 {
         parse_value64(data)
     }
 }
-                                                 
 
 #[derive(Clone)]
 pub struct PackedIter<'a, P, T> {
     data: &'a [u8],
     packed: PhantomData<P>,
-    item: PhantomData<T>
+    item: PhantomData<T>,
 }
 
 impl<'a, P, T> PackedIter<'a, P, T> {
@@ -57,7 +56,7 @@ impl<'a, P, T> PackedIter<'a, P, T> {
         PackedIter {
             data: data,
             packed: PhantomData,
-            item: PhantomData
+            item: PhantomData,
         }
     }
 }
@@ -75,15 +74,13 @@ impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator for PackedIte
 
     fn next(&mut self) -> Option<Self::Item> {
         if self.data.len() < 1 {
-            return None
+            return None;
         }
 
-        P::parse(self.data)
-            .ok()
-            .map(|(value, rest)| {
-                self.data = rest;
-                From::from(value)
-            })
+        P::parse(self.data).ok().map(|(value, rest)| {
+            self.data = rest;
+            From::from(value)
+        })
     }
 
     fn size_hint(&self) -> (usize, Option<usize>) {
@@ -91,35 +88,28 @@ impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator for PackedIte
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
 
     const VARINTS_ENCODED: &'static [u8] = &[0x03, 0x8E, 0x02, 0x9E, 0xA7, 0x05];
-    
+
     #[test]
     fn packed_varints() {
         let iter: PackedIter<'static, PackedVarint, u32> = PackedIter::new(VARINTS_ENCODED);
         assert_eq!(vec![3, 270, 86942], iter.collect::<Vec<u32>>());
     }
-    
-    const VALUE32S_ENCODED: &'static [u8] = &[
-        1, 0, 0, 0,
-        2, 0, 0, 0,
-        3, 0, 0, 0
-    ];
+
+    const VALUE32S_ENCODED: &'static [u8] = &[1, 0, 0, 0, 2, 0, 0, 0, 3, 0, 0, 0];
 
     #[test]
     fn packed_value32s() {
         let iter: PackedIter<'static, PackedValue32, u32> = PackedIter::new(VALUE32S_ENCODED);
         assert_eq!(vec![1, 2, 3], iter.collect::<Vec<u32>>());
     }
-    
+
     const VALUE64S_ENCODED: &'static [u8] = &[
-        1, 0, 0, 0, 0, 0, 0, 0,
-        2, 0, 0, 0, 0, 0, 0, 0,
-        3, 0, 0, 0, 0, 0, 0, 0,
+        1, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 3, 0, 0, 0, 0, 0, 0, 0,
     ];
 
     #[test]

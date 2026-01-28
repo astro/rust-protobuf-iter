@@ -2,12 +2,11 @@ use std::convert::From;
 use std::ops::Deref;
 
 use crate::field::*;
+use crate::packed::*;
 use crate::value32::*;
 use crate::value64::*;
 use crate::varint::*;
-use crate::packed::*;
 
-    
 #[derive(Debug, Eq, PartialEq, Clone)]
 pub enum ParseValue<'a> {
     Value32(Value32<'a>),
@@ -22,7 +21,7 @@ impl<'a> Deref for ParseValue<'a> {
     fn deref(&self) -> &Self::Target {
         match self {
             &ParseValue::LengthDelimited(ref data) => data,
-            _ => panic!("Expected length-delimited data")
+            _ => panic!("Expected length-delimited data"),
         }
     }
 }
@@ -36,14 +35,10 @@ impl<'a> From<ParseValue<'a>> for &'a [u8] {
 impl<'a> From<ParseValue<'a>> for u32 {
     fn from(value: ParseValue<'a>) -> u32 {
         match value {
-            ParseValue::Value32(value32) =>
-                From::from(value32),
-            ParseValue::Value64(value64) =>
-                From::from(value64),
-            ParseValue::Varint(varint) =>
-                From::from(varint),
-            _ =>
-                0
+            ParseValue::Value32(value32) => From::from(value32),
+            ParseValue::Value64(value64) => From::from(value64),
+            ParseValue::Varint(varint) => From::from(varint),
+            _ => 0,
         }
     }
 }
@@ -51,14 +46,10 @@ impl<'a> From<ParseValue<'a>> for u32 {
 impl<'a> From<ParseValue<'a>> for i32 {
     fn from(value: ParseValue<'a>) -> i32 {
         match value {
-            ParseValue::Value32(value32) =>
-                From::from(value32),
-            ParseValue::Value64(value64) =>
-                From::from(value64),
-            ParseValue::Varint(varint) =>
-                From::from(varint),
-            _ =>
-                0
+            ParseValue::Value32(value32) => From::from(value32),
+            ParseValue::Value64(value64) => From::from(value64),
+            ParseValue::Varint(varint) => From::from(varint),
+            _ => 0,
         }
     }
 }
@@ -66,14 +57,10 @@ impl<'a> From<ParseValue<'a>> for i32 {
 impl<'a> From<ParseValue<'a>> for u64 {
     fn from(value: ParseValue<'a>) -> u64 {
         match value {
-            ParseValue::Value32(value32) =>
-                From::from(value32),
-            ParseValue::Value64(value64) =>
-                From::from(value64),
-            ParseValue::Varint(varint) =>
-                From::from(varint),
-            _ =>
-                0
+            ParseValue::Value32(value32) => From::from(value32),
+            ParseValue::Value64(value64) => From::from(value64),
+            ParseValue::Varint(varint) => From::from(varint),
+            _ => 0,
         }
     }
 }
@@ -81,14 +68,10 @@ impl<'a> From<ParseValue<'a>> for u64 {
 impl<'a> From<ParseValue<'a>> for i64 {
     fn from(value: ParseValue<'a>) -> i64 {
         match value {
-            ParseValue::Value32(value32) =>
-                From::from(value32),
-            ParseValue::Value64(value64) =>
-                From::from(value64),
-            ParseValue::Varint(varint) =>
-                From::from(varint),
-            _ =>
-                0
+            ParseValue::Value32(value32) => From::from(value32),
+            ParseValue::Value64(value64) => From::from(value64),
+            ParseValue::Varint(varint) => From::from(varint),
+            _ => 0,
         }
     }
 }
@@ -96,11 +79,12 @@ impl<'a> From<ParseValue<'a>> for i64 {
 impl<'a> ParseValue<'a> {
     pub fn get_data(self) -> &'a [u8] {
         match self {
-            ParseValue::LengthDelimited(ref data) =>
-                data,
+            ParseValue::LengthDelimited(ref data) => data,
             _ =>
-                // TODO: Option?
+            // TODO: Option?
+            {
                 panic!("Expected length-delimited data")
+            }
         }
     }
     pub fn packed_varints<T>(self) -> PackedIter<'a, PackedVarint, T> {
@@ -123,7 +107,7 @@ pub enum ParseError {
     InvalidType,
     Unexpected,
 }
-            
+
 pub type ParseResult<A> = Result<A, ParseError>;
 
 pub fn parse_value32<'a>(data: &'a [u8]) -> ParseResult<(Value32<'a>, &'a [u8])> {
@@ -135,8 +119,7 @@ pub fn parse_value32<'a>(data: &'a [u8]) -> ParseResult<(Value32<'a>, &'a [u8])>
 }
 
 fn parse_value32_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
-    parse_value32(data)
-        .map(|(value32, rest)| (ParseValue::Value32(value32), rest))
+    parse_value32(data).map(|(value32, rest)| (ParseValue::Value32(value32), rest))
 }
 
 pub fn parse_value64<'a>(data: &'a [u8]) -> ParseResult<(Value64<'a>, &'a [u8])> {
@@ -148,8 +131,7 @@ pub fn parse_value64<'a>(data: &'a [u8]) -> ParseResult<(Value64<'a>, &'a [u8])>
 }
 
 fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
-    parse_value64(data)
-        .map(|(value64, rest)| (ParseValue::Value64(value64), rest))
+    parse_value64(data).map(|(value64, rest)| (ParseValue::Value64(value64), rest))
 }
 
 /// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
@@ -169,8 +151,7 @@ pub fn parse_varint<'a>(mut data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
 }
 
 fn parse_varint_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
-    parse_varint(data)
-        .map(|(varint, rest)| (ParseValue::Varint(varint), rest))
+    parse_varint(data).map(|(varint, rest)| (ParseValue::Varint(varint), rest))
 }
 
 fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
@@ -179,15 +160,15 @@ fn parse_length_delimited_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'
             let len: u64 = From::from(len);
             let len = len as usize;
             Ok((ParseValue::LengthDelimited(&data[0..len]), &data[len..]))
-        },
-        condition => condition
+        }
+        condition => condition,
     }
 }
 
 fn parse_deprecated_value<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     Err(ParseError::DeprecatedType)
 }
-                                                
+
 fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])> {
     Err(ParseError::InvalidType)
 }
@@ -208,11 +189,9 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
         Ok((ParseValue::Varint(key), data)) => {
             let key: u64 = From::from(key);
             (key, data)
-        },
-        Ok(_) =>
-            return Err(ParseError::Unexpected),
-        Err(e) =>
-            return Err(e)
+        }
+        Ok(_) => return Err(ParseError::Unexpected),
+        Err(e) => return Err(e),
     };
 
     let msg_tag = (key >> 3) as u32;
@@ -220,13 +199,14 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
 
     let msg_action = MSG_ACTIONS[msg_type as usize];
     match msg_action(data) {
-        Ok((value, data)) =>
-            Ok((Field {
+        Ok((value, data)) => Ok((
+            Field {
                 tag: msg_tag,
-                value: value
-            }, data)),
-        Err(e) =>
-            Err(e)
+                value: value,
+            },
+            data,
+        )),
+        Err(e) => Err(e),
     }
 }
 
@@ -238,20 +218,32 @@ mod tests {
     fn strings() {
         let data = [0x12, 0x07, 0x74, 0x65, 0x73, 0x74, 0x69, 0x6e, 0x67];
         let r = parse_field(&data).unwrap();
-        assert_eq!(r, (Field {
-            tag: 2,
-            value: ParseValue::LengthDelimited(b"testing".as_ref())
-        }, &[][..]));
+        assert_eq!(
+            r,
+            (
+                Field {
+                    tag: 2,
+                    value: ParseValue::LengthDelimited(b"testing".as_ref())
+                },
+                &[][..]
+            )
+        );
     }
 
     #[test]
     fn varint() {
         let data = [0x08, 0x96, 0x01];
         let r = parse_field(&data).unwrap();
-        assert_eq!(r, (Field {
-            tag: 1,
-            value: ParseValue::Varint(Varint { value: 150 })
-        }, &[][..]));
+        assert_eq!(
+            r,
+            (
+                Field {
+                    tag: 1,
+                    value: ParseValue::Varint(Varint { value: 150 })
+                },
+                &[][..]
+            )
+        );
     }
 
     #[test]
@@ -298,9 +290,12 @@ mod tests {
         match parse_field(&PACKED_VARINTS) {
             Ok((field, rest)) => {
                 assert_eq!(field.tag, 4);
-                assert_eq!(vec![3, 270, 86942], field.value.packed_varints().collect::<Vec<u32>>());
+                assert_eq!(
+                    vec![3, 270, 86942],
+                    field.value.packed_varints().collect::<Vec<u32>>()
+                );
                 assert_eq!(rest.len(), 0);
-            },
+            }
             _ => {
                 assert!(false);
             }
