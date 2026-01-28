@@ -1,10 +1,9 @@
 use crate::parse::ParseValue;
 
-
 #[derive(Debug, Eq, PartialEq)]
 pub struct Field<'a> {
     pub tag: u32,
-    pub value: ParseValue<'a>
+    pub value: ParseValue<'a>,
 }
 
 impl<'a> From<Field<'a>> for ParseValue<'a> {
