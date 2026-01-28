@@ -8,9 +8,9 @@ description = "Iterate over Protobuf messages while decoding on the fly"
 documentation = "https://docs.rs/protobuf_iter/"
 repository = "https://github.com/astro/rust-protobuf-iter/"
 
-[dev-dependencies]
-criterion = "0.2"
-
 [[bench]]
 name = "varint_parse"
 harness = false
+
+[dev-dependencies]
+criterion = { version = "0.8", default-features = false }
