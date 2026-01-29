@@ -20,7 +20,7 @@ impl<'a> Deref for ParseValue<'a> {
 
     fn deref(&self) -> &Self::Target {
         match self {
-            &ParseValue::LengthDelimited(ref data) => data,
+            ParseValue::LengthDelimited(data) => data,
             _ => panic!("Expected length-delimited data"),
         }
     }
@@ -79,7 +79,7 @@ impl<'a> From<ParseValue<'a>> for i64 {
 impl<'a> ParseValue<'a> {
     pub fn get_data(self) -> &'a [u8] {
         match self {
-            ParseValue::LengthDelimited(ref data) => data,
+            ParseValue::LengthDelimited(data) => data,
             _ =>
             // TODO: Option?
             {
@@ -135,16 +135,16 @@ fn parse_value64_value<'a>(data: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [
 }
 
 /// Used by packed::PackedVarint to avoid the detour over distinguishing between ParseValue members
-pub fn parse_varint<'a>(mut data: &'a [u8]) -> ParseResult<(Varint, &'a [u8])> {
+pub fn parse_varint(mut data: &[u8]) -> ParseResult<(Varint, &[u8])> {
     let mut shift = 0;
     let mut value = 0;
-    while data.len() > 0 {
+    while !data.is_empty() {
         let byte = data[0];
         value |= ((byte & 0x7f) as u64) << shift;
         shift += 7;
         data = &data[1..];
         if byte & 0x80 == 0 {
-            return Ok((Varint { value }, &data));
+            return Ok((Varint { value }, data));
         }
     }
     Err(ParseError::NotEnoughData)
@@ -173,7 +173,8 @@ fn parse_invalid_type<'a>(_: &'a [u8]) -> ParseResult<(ParseValue<'a>, &'a [u8])
     Err(ParseError::InvalidType)
 }
 
-const MSG_ACTIONS: [&dyn Fn(&[u8]) -> Result<(ParseValue, &[u8]), ParseError>; 8] = [
+type MessageAction = dyn Fn(&[u8]) -> Result<(ParseValue, &[u8]), ParseError>;
+const MSG_ACTIONS: [&MessageAction; 8] = [
     &parse_varint_value,
     &parse_value64_value,
     &parse_length_delimited_value,
@@ -202,7 +203,7 @@ pub fn parse_field<'a>(data: &'a [u8]) -> ParseResult<(Field<'a>, &'a [u8])> {
         Ok((value, data)) => Ok((
             Field {
                 tag: msg_tag,
-                value: value,
+                value,
             },
             data,
         )),

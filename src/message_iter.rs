@@ -10,12 +10,12 @@ pub struct MessageIter<'a> {
 
 impl<'a> MessageIter<'a> {
     pub fn new(data: &'a [u8]) -> Self {
-        MessageIter { data: data }
+        MessageIter { data }
     }
 
     pub fn tag<T: From<ParseValue<'a>>>(self, tag: u32) -> ByTag<'a, T> {
         ByTag {
-            tag: tag,
+            tag,
             inner: self,
             items: PhantomData,
         }
@@ -26,7 +26,7 @@ impl<'a> MessageIter<'a> {
 impl<'a> From<ParseValue<'a>> for MessageIter<'a> {
     fn from(value: ParseValue<'a>) -> MessageIter<'a> {
         match value {
-            ParseValue::LengthDelimited(data) => MessageIter::new(data.as_ref()),
+            ParseValue::LengthDelimited(data) => MessageIter::new(data),
             _ => panic!("Expected buffer to parse"),
         }
     }
