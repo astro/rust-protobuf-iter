@@ -54,7 +54,7 @@ pub struct PackedIter<'a, P, T> {
 impl<'a, P, T> PackedIter<'a, P, T> {
     pub fn new(data: &'a [u8]) -> Self {
         PackedIter {
-            data: data,
+            data,
             packed: PhantomData,
             item: PhantomData,
         }
@@ -73,7 +73,7 @@ impl<'a, P: Packed<'a>, T: From<<P as Packed<'a>>::Item>> Iterator for PackedIte
     type Item = T;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.data.len() < 1 {
+        if self.data.is_empty() {
             return None;
         }
 
