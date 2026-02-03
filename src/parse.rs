@@ -232,6 +232,48 @@ mod tests {
     }
 
     #[test]
+    fn value32_value() {
+        let data = [1, 2, 3, 4, 5];
+        let r = super::parse_value32_value(&data).unwrap();
+        assert_eq!(
+            r,
+            (
+                ParseValue::Value32(Value32 {
+                    data: &[1, 2, 3, 4]
+                }),
+                &[5][..]
+            )
+        );
+
+        let not_enough_data = [1, 2, 3];
+        assert_eq!(
+            super::parse_value32_value(&not_enough_data),
+            Err(ParseError::NotEnoughData)
+        );
+    }
+
+    #[test]
+    fn value64_value() {
+        let data = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+        let r = super::parse_value64_value(&data).unwrap();
+        assert_eq!(
+            r,
+            (
+                ParseValue::Value64(Value64 {
+                    data: &[1, 2, 3, 4, 5, 6, 7, 8]
+                }),
+                &[9][..]
+            )
+        );
+
+        let not_enough_data = [1, 2, 3];
+        assert_eq!(
+            super::parse_value64_value(&not_enough_data),
+            Err(ParseError::NotEnoughData)
+        );
+    }
+
+    #[test]
     fn varint() {
         let data = [0x08, 0x96, 0x01];
         let r = parse_field(&data).unwrap();
@@ -252,6 +294,12 @@ mod tests {
         let data = [0b10101100, 0b00000010];
         let r = super::parse_varint_value(&data).unwrap();
         assert_eq!(r, (ParseValue::Varint(Varint { value: 300 }), &[][..]));
+
+        let not_enough_data = [0b10101100];
+        assert_eq!(
+            super::parse_varint_value(&not_enough_data),
+            Err(ParseError::NotEnoughData)
+        );
     }
 
     #[test]
@@ -301,5 +349,23 @@ mod tests {
                 assert!(false);
             }
         }
+    }
+
+    #[test]
+    fn deprecated_value() {
+        let data = [1];
+        assert_eq!(
+            super::parse_deprecated_value(&data),
+            Err(ParseError::DeprecatedType)
+        );
+    }
+
+    #[test]
+    fn invalid_type() {
+        let data = [1];
+        assert_eq!(
+            super::parse_invalid_type(&data),
+            Err(ParseError::InvalidType)
+        );
     }
 }
