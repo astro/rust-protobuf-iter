@@ -306,23 +306,23 @@ mod tests {
     fn typed() {
         let data32 = &[0x96, 0, 0, 0];
         let value32 = ParseValue::Value32(Value32 { data: data32 });
-        assert_eq!(150u32, From::from(value32.clone()));
-        assert_eq!(150i32, From::from(value32.clone()));
-        assert_eq!(150u64, From::from(value32.clone()));
-        assert_eq!(150i64, From::from(value32.clone()));
+        assert_eq!(150u32, u32::from(value32.clone()));
+        assert_eq!(150i32, i32::from(value32.clone()));
+        assert_eq!(150u64, u64::from(value32.clone()));
+        assert_eq!(150i64, i64::from(value32.clone()));
 
         let data64 = &[0x96, 0, 0, 0, 0, 0, 0, 0];
         let value64 = ParseValue::Value64(Value64 { data: data64 });
-        assert_eq!(150u64, From::from(value64.clone()));
-        assert_eq!(150i64, From::from(value64.clone()));
-        assert_eq!(150u64, From::from(value64.clone()));
-        assert_eq!(150i64, From::from(value64.clone()));
+        assert_eq!(150u32, u32::from(value64.clone()));
+        assert_eq!(150i32, i32::from(value64.clone()));
+        assert_eq!(150u64, u64::from(value64.clone()));
+        assert_eq!(150i64, i64::from(value64.clone()));
 
         let varint = ParseValue::Varint(Varint { value: 150 });
-        assert_eq!(150u64, From::from(varint.clone()));
-        assert_eq!(75i64, From::from(varint.clone()));
-        assert_eq!(150u64, From::from(varint.clone()));
-        assert_eq!(75i64, From::from(varint.clone()));
+        assert_eq!(150u32, u32::from(varint.clone()));
+        assert_eq!(75i32, i32::from(varint.clone()));
+        assert_eq!(150u64, u64::from(varint.clone()));
+        assert_eq!(75i64, i64::from(varint.clone()));
     }
 
     #[test]
