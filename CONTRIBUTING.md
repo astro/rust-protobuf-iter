@@ -41,7 +41,33 @@
   [new GitHub issue](https://github.com/astro/rust-protobuf-iter/issues/new).
 
 
+#### **As a maintainer, do you want to cut a new release?**
+
+* Decide on a version number according to [Semantic
+  Versioning](https://semver.org/). If there’s been any breaking
+  changes to our public API, increment the major version. If there’s
+  been any non-breaking changes (such as new public functions),
+  increment the minor version. Otherwise, increment the patch version.
+
+* Send a pull request to update the version tag in `Cargo.toml` and
+  get it merged into the `master` branch.
+
+* Via the GitHub web interface, [create a
+  release](https://github.com/astro/rust-protobuf-iter/releases/new)
+  with the new tag. Click the button to generate release notes.
+  Clarify and shorten the release notes like in this
+  [example](https://github.com/astro/rust-protobuf-iter/releases/tag/v0.1.3),
+  so downstream users can quickly understand what changed. Finally,
+  click “Publish”.
+
+* That’s all. GitHub will trigger an automated workflow to publish the
+  new version on [crates.io](https://crates.io/crates/protobuf_iter).
+
+
+#### **Do you want to join the team?**
+
 This project is a volunteer effort. We encourage you to pitch in and join
 [the team](https://github.com/astro/rust-protobuf-iter/graphs/contributors)!
+
 
 Thanks! :heart: :heart: :heart:
