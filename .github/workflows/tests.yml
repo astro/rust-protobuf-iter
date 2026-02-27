@@ -43,5 +43,7 @@ jobs:
         cargo llvm-cov test --cobertura --verbose --output-path cobertura.xml
     - name: Check for lint warnings with Clippy
       run: cargo clippy
-    - name: Upload test coverage to Coveralls
+    - name: Upload test coverage to Coveralls.io
+      with:
+        fail-on-error: false
       uses: coverallsapp/github-action@648a8eb78e6d50909eff900e4ec85cab4524a45b  # v2.3.6
